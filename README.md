@@ -1,2 +1,2 @@
-# n64-bluetooth-controller
-Arduino based n64 bluetooth controller.
+# n64-wireless-controller
+Arduino based n64 wireless controller.
