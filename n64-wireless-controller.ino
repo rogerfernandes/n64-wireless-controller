@@ -5,6 +5,11 @@
 
 #define DEBUG false
 
+#define PIPE_0_LED 4
+#define PIPE_1_LED 5
+#define PIPE_2_LED 6
+#define PIPE_3_LED 7
+
 #define N64_CONTROLLER_PIN 8
 #define RADIO_CE_PIN 9
 #define RADIO_CSN_PIN 10
@@ -27,8 +32,15 @@ const uint64_t pipes[pipeSizeArray] = {
   0xF0F0F0F0E1
 };
 
-int pipePos = 0;
-float switchRadioPipePressLength = 0;
+const byte pipeLeds[pipeSizeArray] = {
+  PIPE_0_LED,
+  PIPE_1_LED,
+  PIPE_2_LED,
+  PIPE_3_LED
+};
+
+byte pipePos = 0;
+long switchRadioPipePressLength = 0;
 
 RF24 radio(RADIO_CE_PIN, RADIO_CSN_PIN);
 N64Controller controller (N64_CONTROLLER_PIN);
@@ -37,7 +49,8 @@ void setup() {
   #if DEBUG
     serialSetup();
   #endif
-  
+
+  pipesIndicatorSetup();
   controllerSetup();
   radioSetup();
   
@@ -59,6 +72,13 @@ void loop() {
   delay(10);
 }
 
+void pipesIndicatorSetup(){
+  for(byte i = 0; i < pipeSizeArray; i++){
+    pinMode(pipeLeds[i], OUTPUT);
+    digitalWrite(pipeLeds[i], LOW);
+  }
+}
+
 void controllerSetup(){
   controller.begin();
 }
@@ -74,6 +94,7 @@ void radioSetup(){
   radio.setDataRate(RF24_250KBPS);
   radio.setPayloadSize(sizeof(rfData));
   radio.openWritingPipe(pipes[pipePos]);
+  switchPipeIndicator(pipePos);
 }
 
 void populateRfData(){
@@ -109,6 +130,7 @@ void switchRadioPipe(){
       }
       
       radio.openWritingPipe(pipes[pipePos]);
+      switchPipeIndicator(pipePos);
       switchRadioPipePressLength = 0;
       
       #if DEBUG
@@ -120,6 +142,13 @@ void switchRadioPipe(){
 
     populateRfData();
   }
+}
+
+void switchPipeIndicator(byte pipeIndPos){
+  for(byte i = 0; i < pipeSizeArray; i++){
+    digitalWrite(pipeLeds[i], LOW);
+  }
+  digitalWrite(pipeLeds[pipeIndPos], HIGH);
 }
 
 //Press dUp + start + z + l to switch pipe
