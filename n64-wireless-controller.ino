@@ -3,10 +3,11 @@
 #include "printf.h"
 #include "RF24.h"
 
-#define CE_PIN 7
-#define CSN_PIN 8
-#define CTRL_PIN 5
-#define pipeSizeArray 5
+#define N64_CONTROLLER_PIN 8
+#define RADIO_CE_PIN 9
+#define RADIO_CSN_PIN 10
+
+#define pipeSizeArray 4
 
 struct RfDataStruct {
   bool dUp = false;
@@ -35,14 +36,15 @@ const uint64_t pipes[pipeSizeArray] = {
   0xE14BC8F482,
   0xE8E8F0F0E1,
   0xE8E8F0F0E2,
-  0xF0F0F0F0E1,
-  0xF0F0F0F0D2,
+  0xF0F0F0F0E1
 };
 
-bool DEBUG = true;
+bool DEBUG = false;
+int pipePos = 0;
+float btPipeSwitchPressLength = 0;
 
-RF24 radio(CE_PIN, CSN_PIN);
-N64Controller controller (CTRL_PIN);
+RF24 radio(RADIO_CE_PIN, RADIO_CSN_PIN);
+N64Controller controller (N64_CONTROLLER_PIN);
 
 void setup() {
   serialSetup();
@@ -53,6 +55,7 @@ void setup() {
 
 void loop() {
   populateRfData();
+  switchRadioPipe();
 
   if(isValuesChanged()){
     printRfData();
@@ -80,15 +83,22 @@ void radioSetup(){
   radio.setPALevel(RF24_PA_LOW);
   radio.setDataRate(RF24_250KBPS);
   radio.setPayloadSize(sizeof(rfData));
-  radio.openWritingPipe(pipes[0]);
+  radio.openWritingPipe(pipes[pipePos]);
 }
 
 void debug(){
   if(DEBUG){
     printf_begin();
+    printRadioDetails();
+    delay(2000);
+    Serial.println("Ready!");
+  }
+}
+
+void printRadioDetails(){
+  if(DEBUG){
     radio.printPrettyDetails();
     Serial.println("---------------------------------------------");
-    delay(5000);
   }
 }
 
@@ -110,6 +120,47 @@ void populateRfData(){
   rfData.cRight = controller.C_right();
   rfData.axisX = controller.axis_x();
   rfData.axisY = controller.axis_y();
+}
+
+void switchRadioPipe(){
+  while(isSwitchRadioPipePressed()){
+    delay(50);
+    btPipeSwitchPressLength = btPipeSwitchPressLength + 50;
+
+    if(btPipeSwitchPressLength >= 1000){
+      pipePos++;
+
+      if(pipePos == pipeSizeArray){
+        pipePos = 0;
+      }
+      
+      radio.openWritingPipe(pipes[pipePos]);
+      btPipeSwitchPressLength = 0;
+
+      printRadioDetails();
+      delay(1000);
+    }
+
+    populateRfData();
+  }
+}
+
+//Press dUp + start + z + l to switch pipe
+bool isSwitchRadioPipePressed(){
+  return rfData.dUp
+    && !rfData.dDown
+    && !rfData.dLeft
+    && !rfData.dRight
+    && rfData.start
+    && !rfData.a
+    && !rfData.b
+    && rfData.z
+    && rfData.l
+    && !rfData.r
+    && !rfData.cUp
+    && !rfData.cDown
+    && !rfData.cLeft
+    && !rfData.cRight;
 }
 
 bool isValuesChanged(){
