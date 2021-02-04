@@ -41,7 +41,7 @@ const uint64_t pipes[pipeSizeArray] = {
 
 bool DEBUG = false;
 int pipePos = 0;
-float btPipeSwitchPressLength = 0;
+float switchRadioPipePressLength = 0;
 
 RF24 radio(RADIO_CE_PIN, RADIO_CSN_PIN);
 N64Controller controller (N64_CONTROLLER_PIN);
@@ -125,9 +125,9 @@ void populateRfData(){
 void switchRadioPipe(){
   while(isSwitchRadioPipePressed()){
     delay(50);
-    btPipeSwitchPressLength = btPipeSwitchPressLength + 50;
+    switchRadioPipePressLength = switchRadioPipePressLength + 50;
 
-    if(btPipeSwitchPressLength >= 1000){
+    if(switchRadioPipePressLength >= 1000){
       pipePos++;
 
       if(pipePos == pipeSizeArray){
@@ -135,7 +135,7 @@ void switchRadioPipe(){
       }
       
       radio.openWritingPipe(pipes[pipePos]);
-      btPipeSwitchPressLength = 0;
+      switchRadioPipePressLength = 0;
 
       printRadioDetails();
       delay(1000);
