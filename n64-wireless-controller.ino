@@ -3,18 +3,16 @@
 #include "printf.h"
 #include "RF24.h"
 
-#define DEBUG false
-
-#define PIPE_0_LED 4
-#define PIPE_1_LED 5
-#define PIPE_2_LED 6
-#define PIPE_3_LED 7
-
+#define PIPE_0_LED_PIN 4
+#define PIPE_1_LED_PIN 5
+#define PIPE_2_LED_PIN 6
+#define PIPE_3_LED_PIN 7
 #define N64_CONTROLLER_PIN 8
 #define RADIO_CE_PIN 9
 #define RADIO_CSN_PIN 10
 
-#define pipeSizeArray 4
+#define DEBUG false
+#define PIPE_ARRAY_SIZE 4
 
 struct RfDataStruct {
   bool dUp, dDown, dLeft, dRight, start, a, b, z, l, r, cUp, cDown, cLeft, cRight = false;
@@ -25,18 +23,18 @@ struct RfDataStruct {
 typedef struct RfDataStruct rfDataStruct;
 rfDataStruct rfData, prevRfData;
 
-const uint64_t pipes[pipeSizeArray] = {
+const uint64_t pipes[PIPE_ARRAY_SIZE] = {
   0xE14BC8F482,
   0xE8E8F0F0E1,
   0xE8E8F0F0E2,
   0xF0F0F0F0E1
 };
 
-const byte pipeLeds[pipeSizeArray] = {
-  PIPE_0_LED,
-  PIPE_1_LED,
-  PIPE_2_LED,
-  PIPE_3_LED
+const byte pipeLeds[PIPE_ARRAY_SIZE] = {
+  PIPE_0_LED_PIN,
+  PIPE_1_LED_PIN,
+  PIPE_2_LED_PIN,
+  PIPE_3_LED_PIN
 };
 
 byte pipePos = 0;
@@ -73,7 +71,7 @@ void loop() {
 }
 
 void pipesIndicatorSetup(){
-  for(byte i = 0; i < pipeSizeArray; i++){
+  for(byte i = 0; i < PIPE_ARRAY_SIZE; i++){
     pinMode(pipeLeds[i], OUTPUT);
     digitalWrite(pipeLeds[i], LOW);
   }
@@ -125,7 +123,7 @@ void switchRadioPipe(){
     if(switchRadioPipePressLength >= 1000){
       pipePos++;
 
-      if(pipePos == pipeSizeArray){
+      if(pipePos == PIPE_ARRAY_SIZE){
         pipePos = 0;
       }
       
@@ -145,7 +143,7 @@ void switchRadioPipe(){
 }
 
 void switchPipeIndicator(byte pipeIndPos){
-  for(byte i = 0; i < pipeSizeArray; i++){
+  for(byte i = 0; i < PIPE_ARRAY_SIZE; i++){
     digitalWrite(pipeLeds[i], LOW);
   }
   digitalWrite(pipeLeds[pipeIndPos], HIGH);
