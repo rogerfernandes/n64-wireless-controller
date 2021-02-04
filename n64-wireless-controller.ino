@@ -3,6 +3,8 @@
 #include "printf.h"
 #include "RF24.h"
 
+#define DEBUG false
+
 #define N64_CONTROLLER_PIN 8
 #define RADIO_CE_PIN 9
 #define RADIO_CSN_PIN 10
@@ -10,27 +12,13 @@
 #define pipeSizeArray 4
 
 struct RfDataStruct {
-  bool dUp = false;
-  bool dDown = false;
-  bool dLeft = false;
-  bool dRight = false;
-  bool start = false;
-  bool a = false;
-  bool b = false;
-  bool z = false;
-  bool l = false;
-  bool r = false;
-  bool cUp = false;
-  bool cDown = false;
-  bool cLeft = false;
-  bool cRight = false;
+  bool dUp, dDown, dLeft, dRight, start, a, b, z, l, r, cUp, cDown, cLeft, cRight = false;
   int axisX = 0;
   int axisY = 0;
 };
 
 typedef struct RfDataStruct rfDataStruct;
-rfDataStruct rfData;
-rfDataStruct prevRfData;
+rfDataStruct rfData, prevRfData;
 
 const uint64_t pipes[pipeSizeArray] = {
   0xE14BC8F482,
@@ -39,7 +27,6 @@ const uint64_t pipes[pipeSizeArray] = {
   0xF0F0F0F0E1
 };
 
-bool DEBUG = false;
 int pipePos = 0;
 float switchRadioPipePressLength = 0;
 
@@ -47,10 +34,16 @@ RF24 radio(RADIO_CE_PIN, RADIO_CSN_PIN);
 N64Controller controller (N64_CONTROLLER_PIN);
 
 void setup() {
-  serialSetup();
+  #if DEBUG
+    serialSetup();
+  #endif
+  
   controllerSetup();
   radioSetup();
-  debug();
+  
+  #if DEBUG
+    debugSetup();
+  #endif
 }
 
 void loop() {
@@ -58,17 +51,12 @@ void loop() {
   switchRadioPipe();
 
   if(isValuesChanged()){
-    printRfData();
+    #if DEBUG
+      printRfData();
+    #endif
     radioSendData();
   }
   delay(10);
-}
-
-void serialSetup(){
-  if(DEBUG){
-    Serial.begin(115200);
-    while (!Serial) {}
-  }
 }
 
 void controllerSetup(){
@@ -77,29 +65,15 @@ void controllerSetup(){
 
 void radioSetup(){
   if (!radio.begin()) {
-    Serial.println(F("radio hardware is not responding!!!"));
+    #if DEBUG
+      Serial.println(F("radio hardware is not responding!!!"));
+    #endif
     while (1) {}
   }
   radio.setPALevel(RF24_PA_LOW);
   radio.setDataRate(RF24_250KBPS);
   radio.setPayloadSize(sizeof(rfData));
   radio.openWritingPipe(pipes[pipePos]);
-}
-
-void debug(){
-  if(DEBUG){
-    printf_begin();
-    printRadioDetails();
-    delay(2000);
-    Serial.println("Ready!");
-  }
-}
-
-void printRadioDetails(){
-  if(DEBUG){
-    radio.printPrettyDetails();
-    Serial.println("---------------------------------------------");
-  }
 }
 
 void populateRfData(){
@@ -136,8 +110,11 @@ void switchRadioPipe(){
       
       radio.openWritingPipe(pipes[pipePos]);
       switchRadioPipePressLength = 0;
+      
+      #if DEBUG
+        printRadioDetails();
+      #endif
 
-      printRadioDetails();
       delay(1000);
     }
 
@@ -192,44 +169,64 @@ bool isValuesChanged(){
   return changed;
 }
 
-void printRfData(){
-  if(DEBUG){
-    Serial.print("dUp:    ");
-    Serial.println(rfData.dUp);
-    Serial.print("dDown:  ");
-    Serial.println(rfData.dDown);
-    Serial.print("dLeft:  ");
-    Serial.println(rfData.dLeft);
-    Serial.print("dRight: ");
-    Serial.println(rfData.dRight);
-    Serial.print("start:  ");
-    Serial.println(rfData.start);
-    Serial.print("a:      ");
-    Serial.println(rfData.a);
-    Serial.print("b:      ");
-    Serial.println(rfData.b);
-    Serial.print("z:      ");
-    Serial.println(rfData.z);
-    Serial.print("l:      ");
-    Serial.println(rfData.l);
-    Serial.print("r:      ");
-    Serial.println(rfData.r);
-    Serial.print("cUp:    ");
-    Serial.println(rfData.cUp);
-    Serial.print("cDown:  ");
-    Serial.println(rfData.cDown);
-    Serial.print("cLeft:  ");
-    Serial.println(rfData.cLeft);
-    Serial.print("cRight: ");
-    Serial.println(rfData.cRight);
-    Serial.print("axisX:  ");
-    Serial.println(rfData.axisX);
-    Serial.print("axisY:  ");
-    Serial.println(rfData.axisY);
-    Serial.println("------------------");
-  }  
-}
-
 void radioSendData(){
   radio.write(&rfData, sizeof(rfData));
 }
+
+#if DEBUG
+void serialSetup(){
+  Serial.begin(115200);
+  while (!Serial) {}
+}
+
+void debugSetup(){
+  printf_begin();
+  printRadioDetails();
+  delay(2000);
+  Serial.println("Ready!");
+}
+
+
+void printRadioDetails(){
+  if(DEBUG){
+    radio.printPrettyDetails();
+    Serial.println("---------------------------------------------");
+  }
+}
+
+void printRfData(){
+  Serial.print("dUp:    ");
+  Serial.println(rfData.dUp);
+  Serial.print("dDown:  ");
+  Serial.println(rfData.dDown);
+  Serial.print("dLeft:  ");
+  Serial.println(rfData.dLeft);
+  Serial.print("dRight: ");
+  Serial.println(rfData.dRight);
+  Serial.print("start:  ");
+  Serial.println(rfData.start);
+  Serial.print("a:      ");
+  Serial.println(rfData.a);
+  Serial.print("b:      ");
+  Serial.println(rfData.b);
+  Serial.print("z:      ");
+  Serial.println(rfData.z);
+  Serial.print("l:      ");
+  Serial.println(rfData.l);
+  Serial.print("r:      ");
+  Serial.println(rfData.r);
+  Serial.print("cUp:    ");
+  Serial.println(rfData.cUp);
+  Serial.print("cDown:  ");
+  Serial.println(rfData.cDown);
+  Serial.print("cLeft:  ");
+  Serial.println(rfData.cLeft);
+  Serial.print("cRight: ");
+  Serial.println(rfData.cRight);
+  Serial.print("axisX:  ");
+  Serial.println(rfData.axisX);
+  Serial.print("axisY:  ");
+  Serial.println(rfData.axisY);
+  Serial.println("------------------");
+}
+# endif
